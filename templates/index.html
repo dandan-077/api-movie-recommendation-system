@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Recommendation System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding-top: 50px;
+        }
+        .movie-poster {
+            max-width: 200px;
+        }
+        .movie-details {
+            margin-bottom: 30px;
+        }
+        .actor-photo {
+            max-width: 80px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Movie Recommendation System</h1>
+        <form id="recommendationForm" class="my-4">
+            <div class="form-group">
+                <label for="movie_search">Search or Select a Movie:</label>
+                <input type="text" id="movie_search" class="form-control" placeholder="Type to search..." list="movie_list" required>
+                <datalist id="movie_list">
+                    {% for movie in movie_names %}
+                        <option value="{{ movie }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            <button type="submit" class="btn btn-primary">Get Recommendations</button>
+        </form>
+        
+        <div id="recommendations" class="mt-4"></div>
+    </div>
+
+    <script>
+        document.getElementById('recommendationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const movieTitle = document.getElementById('movie_search').value;
+            fetch(`/recommend?movie_title=${encodeURIComponent(movieTitle)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const recommendationsDiv = document.getElementById('recommendations');
+                    recommendationsDiv.innerHTML = ''; // Clear previous recommendations
+
+                    if (data.error) {
+                        recommendationsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    } else {
+                        data.recommendations.forEach(movie => {
+                            const movieHTML = `
+                                <div class="movie-details row">
+                                    <div class="col-md-3">
+                                        <img src="${movie.poster}" alt="${movie.title}" class="movie-poster img-fluid">
+                                    </div>
+                                    <div class="col-md-9">
+                                        <h3>${movie.title}</h3>
+                                        <p>${movie.summary}</p>
+                                        <h5>Top Cast:</h5>
+                                        <div class="row">
+                                            ${movie.actors.map(actor => `
+                                                <div class="col-2 text-center">
+                                                    <img src="${actor.photo}" alt="${actor.name}" class="actor-photo img-fluid">
+                                                    <p>${actor.name}</p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                            `;
+                            recommendationsDiv.innerHTML += movieHTML;
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching recommendations:', error);
+                    const recommendationsDiv = document.getElementById('recommendations');
+                    recommendationsDiv.innerHTML = `<div class="alert alert-danger">An error occurred. Please try again later.</div>`;
+                });
+        });
+    </script>
+</body>
+</html>
